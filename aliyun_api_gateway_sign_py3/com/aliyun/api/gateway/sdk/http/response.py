@@ -1,4 +1,5 @@
 from aliyun_api_gateway_sign_py3.com.aliyun.api.gateway.sdk.http.request import Request
+import ssl
 
 import http.client
 import urllib.request, urllib.parse, urllib.error
@@ -6,7 +7,8 @@ from aliyun_api_gateway_sign_py3.com.aliyun.api.gateway.sdk.common import consta
 
 
 class Response(Request):
-    def __init__(self, host=None, url=None, method=constant.GET, headers={}, protocol=constant.HTTP, content_type=None, content=None, port=None,
+    def __init__(self, host=None, url=None, method=constant.GET, headers={}, protocol=constant.HTTP, content_type=None,
+                 content=None, port=None,
                  key_file=None, cert_file=None, time_out=None):
         Request.__init__(self, host=host, protocol=protocol, url=url, headers=headers, method=method, time_out=time_out)
         self.__ssl_enable = False
@@ -18,6 +20,7 @@ class Response(Request):
         self.__connection = None
         self.set_body(content)
         self.set_content_type(content_type)
+        self.ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
     def set_ssl_enable(self, enable):
         self.__ssl_enable = enable
@@ -82,8 +85,8 @@ class Response(Request):
         try:
             self.__port = 443
             self.__connection = http.client.HTTPSConnection(self.parse_host(), self.__port,
-                                                        cert_file=self.__cert_file,
-                                                        key_file=self.__key_file)
+                                                            cert_file=self.__cert_file,
+                                                            key_file=self.__key_file, context=self.ctx)
             self.__connection.connect()
             post_data = None
             if self.get_content_type() == constant.CONTENT_TYPE_FORM and self.get_body():
@@ -105,7 +108,7 @@ class Response(Request):
         try:
             self.__port = 443
             self.__connection = http.client.HTTPSConnection(self.get_host(), self.__port, cert_file=self.__cert_file,
-                                                        key_file=self.__key_file)
+                                                            key_file=self.__key_file, context=self.ctx)
             self.__connection.connect()
             self.__connection.request(method=self.get_method(), url=self.get_url(), body=self.get_body(),
                                       headers=self.get_headers())
